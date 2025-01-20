@@ -1,6 +1,6 @@
 
 #TODO: Remove this - Hack until I get poetry setup
-from lazy_logger import Logger_Base
+from lazy_logger.my_logger import Logger_Base
 name = "my_custom_handler"
 log_file=f"log/{name}.log"
 logger=Logger_Base(name=name, file_path=log_file)

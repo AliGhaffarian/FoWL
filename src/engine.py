@@ -9,7 +9,7 @@ from scapy.all import *
 import inspect
 from uuid import uuid4
 
-from my_logger import Logger_Base
+from lazy_logger.my_logger import Logger_Base
 from scapy_handler import handle, Unhandled_Scapy_Type
 
 class engine_exit:

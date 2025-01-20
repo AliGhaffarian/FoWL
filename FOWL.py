@@ -9,7 +9,7 @@ ts = datetime.now
 import pdb
 from os import mkdir, geteuid
 from sys import argv as app_args
-from bcolors import bcolors
+from lazy_logger import bcolors
 
 #Network+Scapy stuff
 import socket, sys, time
@@ -37,7 +37,7 @@ try:
     from argument_parser import FOWL_Argument_Parser, FOWL_Firewall_Setup
     from engine import realtime_engine, engine_exit, engine_exit_notify
     from database import RAM_CACHE
-    from lazy_logger import Logger_Base 
+    from lazy_logger.my_logger import Logger_Base 
     from misc import timeit
     from scapy_handler import Unhandled_Scapy_Type
     from iproute_detection import get_interface_info

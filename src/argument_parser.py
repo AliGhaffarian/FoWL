@@ -1,8 +1,8 @@
 from argparse import RawTextHelpFormatter, Action, ArgumentParser, BooleanOptionalAction
-from bcolors import bcolors
+from lazy_logger import bcolors
 from os import environ as env
 
-from lazy_logger import Logger_Base
+from lazy_logger.my_logger import Logger_Base
 
 class FOWL_Firewall_Setup(Action):
     def __init__(self, option_strings, dest, nargs=None, **kwargs):

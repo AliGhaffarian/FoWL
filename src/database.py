@@ -1,5 +1,5 @@
 from benedict.dicts import benedict
-from my_logger import Logger_Base
+from lazy_logger.my_logger import Logger_Base
 from uuid import uuid4
 import json
 from datetime import timedelta, datetime
