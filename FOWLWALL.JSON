@@ -3,12 +3,12 @@
         "ban":[
             {
                 "name": "Block hosts who touch port 22",
-                "rule": "tcp.syn and dst.port.22",
+                "rule": "tcp.syn and dst.port==22",
                 "period": "forever"
             },
             {
                 "name": "Block hosts who touch port 80",
-                "rule": "tcp.syn and dst.port.80",
+                "rule": "tcp.syn and dst.port==80",
                 "period": "forever"
             }
         ]
@@ -18,9 +18,9 @@
             {
                 "name":"Unlock ssh",
                 "sequence":[
-                    "tcp.fin and (dst.port=9999 or src.port=5555)",
+                    "tcp.fin and (dst.port==9999 or src.port==5555)",
                     "udp and src.port=5555",
-                    "tcp.rst and (dst.port=9999 or src.port=5555)"
+                    "tcp.rst and (dst.port==9999 or src.port==5555)"
                 ],
                 "period": "hours=8"
             }

@@ -19,7 +19,7 @@ def get_interface_info(**kwargs):
     debug = kwargs.pop('debug', None)
     logger = kwargs.pop('logger', None)
     if not logger:
-        from lazy_logger import Logger_Base
+        from lazy_logger.my_logger import Logger_Base
         logger=Logger_Base(name=__name__)
         if debug: logger.enable_debug()
 

@@ -329,10 +329,10 @@ This time though, I found a simple concrete:
 
 Though, I would love for it to be a 1-stop-shop for any team (Red, Blue, the general network operator, etc), the **Big TODO:** has simply gotten too big, and getting to this point has taken long enough(collectively a few hundred hours) that I don't see that happening (this year.)
 
+</description>
+
+
+
 
 
  FoWL © 2024 by Brandon Fanti is licensed under CC BY-NC-SA 4.0 
-
-
-
-

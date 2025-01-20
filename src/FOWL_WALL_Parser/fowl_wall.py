@@ -35,6 +35,7 @@ class WarnConfigParserError(Exception):
 
 
 class rule_token_to_scapy_translation_layer:
+    interpreable_root_tokens = ['device', 'tcp', 'dhcp']
     STATEMENT_NONE=0
     STATEMENT_BIFURCATES=1
     direct_translations={
@@ -102,6 +103,32 @@ class rule_parser:
 
     def __init__(self, *args, **kwargs):
         pass
+
+    @classmethod 
+    def get_splittable_seperator_token(_cls, rule:str):
+        for token in _cls.supported_conditional_separators:
+            if token in rule:
+                return token
+
+    @classmethod 
+    def get_splittable_comparator_token(_cls, rule:str):
+        for token in _cls.supported_conditional_comparators:
+            if token in rule:
+                return token
+
+    @classmethod
+    def alienate_seperators(_cls, rule):
+        token = _cls.get_splittable_seperator_token(rule)
+        tokenized = rule.split(token)
+        return [tokenized[0], token, tokenized[1]]
+
+    @classmethod
+    def alienate_comparators(_cls, rule):
+        token = _cls.get_splittable_comparator_token(rule)
+        tokenized = rule.split(token)
+        if len(tokenized) > 1:
+            return [tokenized[0], token, tokenized[1]]
+        else: return rule
 
     @classmethod
     def alienate(_cls, rule, seperators):
@@ -202,6 +229,106 @@ class rule_parser:
         #TODO: Finish translation layer(rule_token_translation_layer), then this
         return lambda x: True
 
+class rule:
+
+    def __init__(self, rule_str, rule_embed_depth=0):
+        self._raw = rule_str
+        self.rule_embed_depth=rule_embed_depth
+
+        seperators = rule_parser.supported_conditional_separators
+        comparators = rule_parser.supported_conditional_comparators
+
+        # for seperator in seperators:
+        #     print(f"'{seperator}' in {rule_str} : {seperator in rule_str}")
+
+        self.rules_by_seperators = rule_parser.alienate_seperators(
+            self._raw
+        )
+
+
+        filter_subrules = lambda x: [rule for rule in self.rules_by_seperators if not rule in seperators ]
+        subrules = filter_subrules(self.rules_by_seperators)
+
+        self.filter_subrules = filter_subrules
+
+        self.subrules = subrules
+
+        while self._contains_nested_subrules():
+            rules_with_subrules = filter_subrules(subrules)
+            print(f"Parsing out subrules in {rules_with_subrules}")
+            for i,subrule in enumerate(rules_with_subrules):
+                if any([seperator in subrule for seperator in seperators]):
+                    print(f"Embedding rule instance for {subrule}")
+                    subrules[i] = rule(subrule, rule_embed_depth=rule_embed_depth+2)
+            self.subrules = subrules
+            print(f"Checking if rules has subrules: {self._contains_nested_subrules()}")
+
+        self.rules_by_comparators = [
+            rule_parser.alienate_comparators(rule)
+            for rule in self.rules_by_seperators
+        ]
+
+        self.root_rule = True if not any([isinstance(e, list) for e in self.rules_by_comparators]) else False
+
+        self.translated_rules = []
+        for comparator_rule in self.rules_by_comparators:
+            if isinstance(comparator_rule, list):
+                for token in rule_token_to_scapy_translation_layer.interpreable_root_tokens:
+                    for rule_token in comparator_rule:
+                        if token in rule_token:
+                            self.translated_rules.append(
+                                rule_token_to_scapy_translation_layer.translate(rule_token)
+                            )
+
+    def contains_nested_subrules(self):
+        return any([isinstance(subrule,rule)  for subrule in self.subrules])
+
+    def _contains_nested_subrules(self):
+        for rule in self.subrules:
+            for seperator in rule_parser.supported_conditional_separators:
+                if isinstance(rule, str)\
+                    and seperator in rule \
+                    and not seperator == rule:
+                    return True
+        return False
+
+    def translate(self):
+        return 
+
+    def __str__(self):
+
+        translated_rules_str = f"{'    '*(self.rule_embed_depth+3)}" + \
+                f",\n{'    '*(self.rule_embed_depth+3)}".join(str(rule) for rule in self.translated_rules if not isinstance(rule, str))
+
+
+        if self.contains_nested_subrules():
+            subrule_str =  f"{'    '*(self.rule_embed_depth+1)}" + \
+                f",\n{'    '*(self.rule_embed_depth+1)}".join(str(rule) for rule in self.subrules if not isinstance(rule, str))
+
+            return  f"""{'    '*self.rule_embed_depth}Raw Rule: {self._raw}\n""" + \
+                    f"""{'    '*(self.rule_embed_depth+1)}    rule_is_root: {self.root_rule}\n"""+\
+                    f"""{'    '*(self.rule_embed_depth+1)}    seperators  : {self.rules_by_seperators}\n"""+\
+                    f"""{'    '*(self.rule_embed_depth+1)}    comparators : {self.rules_by_comparators}\n"""+\
+                    f"""{'    '*(self.rule_embed_depth)}        subrules: [\n"""+\
+                        subrule_str + \
+                    f"\n    {'    '*self.rule_embed_depth}    ]\n" +\
+                    f"""{'    '*(self.rule_embed_depth+1)}rules_translated: [\n"""+\
+                        translated_rules_str + \
+                    f"\n    {'    '*(self.rule_embed_depth)}]\n" 
+
+        else:
+            return  f"""{'    '*self.rule_embed_depth}Raw Rule: {self._raw}\n""" + \
+                    f"""{'    '*(self.rule_embed_depth+1)}    rule_is_root: {self.root_rule}\n"""+\
+                    f"""{'    '*(self.rule_embed_depth+1)}    seperators  : {self.rules_by_seperators}\n"""+\
+                    f"""{'    '*(self.rule_embed_depth+1)}    comparators : {self.rules_by_comparators}\n"""+\
+                    f"""{'    '*(self.rule_embed_depth+2)}rules_translated: [\n"""+\
+                        translated_rules_str + \
+                    f"\n    {'    '*(self.rule_embed_depth+1)}]\n" 
+
+
+
+
+
 
 class config_parser:
     _native_notify_methods = {'MQTT':notify.mqtt.handler}
@@ -230,9 +357,10 @@ class config_parser:
         f2b_conditions = []
         for i,entry in enumerate(f2b['ban']):
             print(f"Parsing F2B Rule {i}, parsing rule name: {entry['name']}")
-            f2b_conditions.append(
-                rule_parser.parse(entry['rule'])
-            )
+            print(rule(entry['rule']))
+            # f2b_conditions.append(
+            #     rule_parser.parse(entry['rule'])
+            # )
         print(f"Successfully parsed f2b rules")
 
         print(f"Parsing config for knockd")
@@ -257,10 +385,11 @@ class config_parser:
             try:
                 function = import_function_handler(entry['with'])
                 if function:
-                    custom_calls.append((
-                        function,
-                        rule_parser.parse(entry['rule']) if 'rule' in entry.keys() else lambda x: True
-                    ))
+                    print(rule(entry['rule'])) if 'rule' in entry.keys() else lambda x: True
+                    # custom_calls.append((
+                    #     function,
+                    #     rule_parser.parse(entry['rule']) if 'rule' in entry.keys() else lambda x: True
+                    # ))
                     continue
                 print(f"Failed to identify module `{module}`")
             except Exception as e:
@@ -274,14 +403,16 @@ class config_parser:
             if entry['method'] in _cls._native_notify_methods.keys():
                 notify_calls.append((
                     _cls._native_notify_methods[entry['method']],
-                    rule_parser.parse(entry['rule'])
+                    print(rule(entry['rule']))
+                    # rule_parser.parse(entry['rule'])
                 ))
             else:
                 function = import_function_handler(entry['with'])
                 if function:
                     notify_calls.append((
                         function,
-                        rule_parser.parse(entry['rule'])
+                    print(rule(entry['rule']))
+                        # rule_parser.parse(entry['rule'])
                     ))
         print(f"Successfully parsed notification methods")
 

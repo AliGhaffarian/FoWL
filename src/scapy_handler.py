@@ -7,7 +7,7 @@ import pickle
 from datetime import datetime, timedelta
 ts = datetime.now
 
-from lazy_logger import Logger_Base 
+from lazy_logger.my_logger import Logger_Base 
 from misc import wut
 from traceback import format_exception
 
